@@ -1,4 +1,4 @@
-atlas2
+Atlas2
 ======
 
-The new version of AtlasOS.
+This will be the next version of the Atlas kernel. I'll upload some code soon.
