@@ -1,0 +1,40 @@
+** Atlas 2 driver interface
+In Atlas 2 the drivers are either included into the kernel or placed into the "/drv/" directory as shared objects (.so). The access to the hardware is provided via system routines (eg. file system) or special libraries (eg. direct screen access).
+A driver must specify a identification routine which enables it to identify matching hardware. A identification routine in C would look like this:
+
+== C ==
+
+struct HWid
+{
+
+	word hw_upper;
+	word hw_lower;
+
+	word mf_upper;
+	word mf_lower;
+
+	word version;
+
+}
+
+(*)(word) identify(HWid *id)
+{
+	// Check for compatible hardware id and manufacturer
+	if (id->hw_upper == 0x42ba && id->hw_lower == 0xbf3c && id->mf_upper == 0x1eb3 && id->mf_lower == 0x7e91) {
+	
+		// Check for compatible version
+		if (id->version < 3)
+			return &old_handler;
+		else
+			return &new_handler;
+
+	}
+
+	return NULL;
+}
+
+== /C ==
+
+It returns NULL (0x0000) if the hardware does not match and a function pointer to the handler iff the hardware matches.
+If identify() returned a function pointer Atlas 2 will call the returned function with the number of the number of the hardware it is assigned to.
+
