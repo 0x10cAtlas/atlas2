@@ -1,0 +1,74 @@
+
+; Atlas 2 Root FS
+;
+; struct rootfs_entry {
+;	word name[8];
+;	word flags;
+;	word owner;
+;	word pointer;
+;	word length;
+; }
+
+.DEF ROOT_FS_ENTRY_LENGTH 12
+
+:rootfs
+	DAT "rootfs", 0, 0
+	DAT 0xFFFF
+	DAT 0
+	DAT rootdir
+	DAT rootdir_end - rootdir
+
+:rootdir
+
+	DAT "mnt", 0, 0, 0, 0, 0
+	DAT FS_DIRECTORY | FS_SYSTEM
+	DAT 0
+	DAT 0
+	DAT 0
+
+	DAT "proc", 0, 0, 0, 0
+	DAT FS_DIRECTORY | FS_SYSTEM | FS_VIRTUAL | FS_READONLY
+	DAT 0
+	DAT proc_fs_handler
+	DAT 0
+
+	DAT "dev", 0, 0, 0, 0, 0
+	DAT FS_DIRECTORY | FS_SYSTEM | FS_VIRTUAL | FS_READONLY
+	DAT 0
+	DAT dev_fs_handler
+	DAT 0
+
+	DAT "drv", 0, 0, 0, 0, 0
+	DAT FS_DIRECTORY | FS_SYSTEM
+
+:rootdir_end
+
+; fs_get_node
+; returns the address of the node specified by the path
+; A -> address of the path
+; A <- address of the node
+:fs_get_node
+	;; ToDo: Push
+	IFN [A], 0
+		
+	;; ToDo: Do something
+
+	;; ToDo: Pop
+	SET PC, POP
+
+; fs_path_seg_eq
+; compares a path segment to a node
+; A -> string
+; B -> node
+; A <- 1 if eq, 0 if not
+:fs_path_seg_eq
+	SET C, 8
+
+:fs_path_seg_eq_loop
+
+	SUB C, 1
+	IFN C, 0
+		SET PC, fs_path_seg_eq_loop
+
+:fs_path_seg_eq_end
+	
