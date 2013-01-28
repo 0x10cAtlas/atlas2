@@ -5,22 +5,22 @@
 ; # 28.01.2013, plusmid - created file, implemented basic paging              #
 ; #############################################################################
 
-; page_get_memory - calculates the amount of free memory
+; page_free_memory - calculates the amount of free memory
 ; A <- the amount of memory in free pages
 ; ToDo: TEST!
-:page_get_memory
+:page_free_memory
 	SET PUSH, X
 	SET X, page_table
 	SET A, 0
 
-:page_get_memory_loop
+:page_free_memory_loop
 	IFE [X], 0
 		ADD A, 1024
 
 	ADD X, 2
 
 	IFN X, page_table_end
-		SET PC, page_get_memory_loop
+		SET PC, page_free_memory_loop
 
 	SET X, POP
 	SET PC, POP
@@ -97,12 +97,12 @@
 	SET Y, page_table
 	SET Z, 0xFFFF
 
-:loop
+:page_get_freeloop
 	IFE Y, page_table_end
-		SET PC, end
+		SET PC, page_get_free_end
 
 	IFN [Y], 0
-		SET PC, else
+		SET PC, page_get_free_else
 
 	IFE Z, 0xFFFF
 		SET Z, Y;
@@ -110,22 +110,22 @@
 	SUB X, 1;
 
 	IFE X, 0
-		SET PC, end
+		SET PC, page_get_free_end
 
-	SET PC, skip
+	SET PC, page_get_free_skip
 
-:else
+:page_get_free_else
 	IFE Z, 0xFFFF
-		SET PC, skip
+		SET PC, page_get_free_skip
 
 	SET Z, 0xFFFF;
 	SET X, A;
 
-:skip
+:page_get_free_skip
 	ADD Y, 2;
-	SET PC, loop
+	SET PC, page_get_free_loop
 
-:end
+:page_get_free_end
 	SET A, Z
 
 	; calculate the page number
