@@ -1,0 +1,55 @@
+; #############################################################################
+; # Atlas 2 Kernel - Text routines                                            #
+; # Author: plusmid (Noxer)                                                   #
+; # Date:   28.01.2013                                                        #
+; # Changelog:                                                                #
+; # 28.01.2013 - file created, basic routines                                 #
+; #############################################################################
+
+; strlen - calculates the length of a string
+; A -> pointer to the string
+; A <- length of the string in words
+:strlen
+	SET PUSH, B
+
+	SET B, 0xFFFF
+	SUB A, 1
+
+:strlen_loop
+	ADD A, 1
+	ADD B, 1
+	IFN [A], 0
+		SET PC, strlen_loop
+
+	SET A, B
+	SET B, POP
+	SET PC, POP
+
+
+; strcpy - copies a string from one address to another
+; A -> source pointer
+; B -> destination pointer
+; A <- copied words
+:strcpy
+	SET PUSH, B
+	SET PUSH, C
+
+	SET C, 0
+
+:strcpy_loop
+	IFE [A], 0
+		SET PC, strcpy_end
+	SET [B], [A]
+	ADD A, 1
+	ADD B, 1
+	ADD C, 1
+	SET PC, strcpy_loop
+
+:strcpy_end
+	SET [B], [A]
+	SET A, C
+
+	SET B, POP
+	SET C, POP
+	SET PC, POP
+
