@@ -1,9 +1,8 @@
 ; #############################################################################
-; # Atlas 2 Kernel - Text routines                                            #
-; # Author: plusmid (Noxer)                                                   #
-; # Date:   28.01.2013                                                        #
+; # Atlas 2 Kernel - String routines                                          #
+; # Created: 28.01.2013                                                       #
 ; # Changelog:                                                                #
-; # 28.01.2013 - file created, basic routines                                 #
+; # 28.01.2013, plusmid - file created, basic routines                        #
 ; #############################################################################
 
 ; strlen - calculates the length of a string
