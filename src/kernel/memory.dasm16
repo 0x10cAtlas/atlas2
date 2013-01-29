@@ -14,6 +14,7 @@
 	SET PUSH, C
 	SET C, 0
 	JSR mem_set
+	SET C, POP
 	SET PC, POP
 
 
