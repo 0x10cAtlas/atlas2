@@ -70,3 +70,48 @@
 	SET A, POP
 	SET PC, POP
 
+
+; mm_setup - sets up memory management
+; A -> start address of the memory to manage
+; B -> number of words to manage (even number!)
+; ToDo: TEST!
+:mm_setup
+	SET PUSH, A
+	SET PUSH, B
+
+	AND B, 0xFFFE
+	SUB B, 4
+	SET [A], 0x0000
+	ADD A, 1
+	SET [A], B
+	ADD A, B
+	ADD A, 2
+	SET [A], B
+	ADD A, 1
+	SET [A], 0x0000
+
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
+; mm_free - counts the amount of free memory in this memory table
+; A -> start of the memory table
+; A <- amount of free memory in this table
+:mm_free
+	IFN [A], 0
+		SET PC, mm_free_err
+
+	ADD A, 1
+	SET X, [A]
+
+	AND X, 0xFFFE
+	IFN X, 0
+		SET PC, mm_free_skip
+
+	ADD Y, [A]
+	ADD A, 1
+
+:mm_free_skip
+	ADD A, 
+; ToDo: Complete!
+
