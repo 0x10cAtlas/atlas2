@@ -1,4 +1,4 @@
 Atlas2
 ======
 
-This will be the next version of the Atlas kernel. I'll upload some code soon.
+* [wiki](https://github.com/0x10cAtlas/atlas2/wiki)
