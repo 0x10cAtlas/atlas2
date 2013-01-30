@@ -4,6 +4,7 @@
 ; # Changelog:                                                                #
 ; # 29.01.2013, bungao - file created, basic routines                         #
 ; # 29.01.2013, plusmid - changed some of the comments                        #
+; # 31.01.2013, bungao  - added mm_alloc                                      #
 ; #############################################################################
 
 
@@ -80,18 +81,18 @@
 	SET PUSH, A
 	SET PUSH, B
 
-	AND B, 0xFFFE
-	SUB B, 4
-	SET [A], 0x0000
-	ADD A, 1
-	SET [A], B
-	ADD A, B
-	ADD A, 2
-	SET [A], B
-	ADD A, 1
-	SET [A], 0x0000
+	AND B, 0xFFFE  ; set to even
+	SUB B, 4		; sub overhead
+	SET [A], 0x0000 ; set first word to zero
+	ADD A, 1		; shift pointer
+	SET [A], B		; set second word to allocation size
+	ADD A, B		; shift to 3rd last word
+	ADD A, 1		; shift to second last word
+	SET [A], B		; set to allocation size
+	ADD A, 1		; shift to last word
+	SET [A], 0x0000	; set to 0
 
-	SET B, POP
+	SET B, POP		; restore
 	SET A, POP
 	SET PC, POP
 
@@ -133,3 +134,84 @@
 	SET Y, POP
 	SET X, POP
 	SET PC, POP
+
+
+
+;mm_alloc allocates a length of memory and returns address
+; A -> pionter to manage memory area.
+; B -> length to allocate, rounded up if odd
+; A <- address of allocation, if no free memory is found 0 is returned.
+;malloc
+:mm_alloc
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, C
+    SET PUSH, I
+	SET PUSH, J
+	SET PUSH, B
+	AND B, 0x0001
+	IFE B, 1
+		ADD PEEK, 1
+
+	ADD A, 1
+	SET J, PEEK
+	ADD J, 2
+:mm_alloc_loop
+	SET B, [A]
+        IFE B, 0
+            SET PC, mm_alloc_error
+	SET C, B
+	AND C, 0x0001
+	IFE C, 1
+		SET PC, mm_alloc_skip
+
+	IFG J, B
+		SET PC, mm_alloc_skip
+
+	SET C, A
+        ADD C, 1
+	ADD C, B
+        ADD C, 1
+        IFE 0, [C]
+            SET PC, mm_alloc_table_end
+        SUB C, 1
+	SET [A], PEEK ; first bookend to length
+	SET I, A
+	ADD I, PEEK
+        ADD I, 1
+	SET [I], PEEK
+	ADD [I], 1
+	ADD [A], 1
+	ADD I, 1
+	SET B, [C]
+	SUB B, PEEK
+	SUB B, 2
+	SET [C], B
+	SET [I], B
+
+
+:mm_alloc_end
+	ADD SP, 1
+	SET J, POP
+    SET I, POP
+	SET C, POP
+	SET B, POP
+	ADD SP, 1
+        ADD A, 1
+	SET PC, POP
+
+:mm_alloc_skip
+        AND B, 0xFFFE
+	ADD A, B
+	ADD A, 1
+	SET PC, mm_alloc_loop
+
+:mm_alloc_error
+        SET A, 0xffff
+        SET PC, mm_alloc_end
+
+:mm_alloc_table_end
+        SUB C, 1
+        ADD [A], 1
+        ADD [C], 1
+        SET PC, mm_alloc_end
