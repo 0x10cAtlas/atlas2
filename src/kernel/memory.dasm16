@@ -5,17 +5,18 @@
 ; # 29.01.2013, bungao - file created, basic routines                         #
 ; # 29.01.2013, plusmid - changed some of the comments                        #
 ; # 31.01.2013, bungao  - added mm_alloc                                      #
+; # 31.01.2013, plusmid - added comments, make mm_alloc (slightly) faster     #
 ; #############################################################################
 
 
-; mem_clear
+; mem_clear - sets the memory to 0x0000 (wrapper for mem_set with C = 0)
 ; A -> From Addr
 ; B -> Length
 :mem_clear
-	SET PUSH, C
+	SET PUSH, C ; save C
 	SET C, 0
-	JSR mem_set
-	SET C, POP
+	JSR mem_set ; call mem_set with C = 0
+	SET C, POP  ; clean up
 	SET PC, POP
 
 
@@ -26,25 +27,23 @@
 ; B -> dest
 ; C -> length
 :mem_copy
-	SET PUSH, A
+	SET PUSH, A ; save registers
 	SET PUSH, B
 	SET PUSH, C
 	SET PUSH, I
 	SET PUSH, J
 
-	; Calulate the last address
-	ADD C, A
+	ADD C, A    ; calculate last address
 
-	; Some prep work so we can use STI
-	SET I, B
+	SET I, B    ; some prep work so we can use STI
 	SET J, A
 
 :mem_copy_loop
-	STI [I], [J]
-	IFN J, C
-		SET PC, mem_copy_loop
+	STI [I], [J] ; use STI to do our work
+	IFN J, C    ; are we done?
+		SET PC, mem_copy_loop ; no, repeat!
 
-	SET J, POP
+	SET J, POP ; yes, clean up
 	SET I, POP
 	SET C, POP
 	SET B, POP
@@ -52,23 +51,22 @@
 	SET PC, POP
 
 	
-;mem_set
-;sets an area of memory to a value
-;A -> start
-;B -> length
-;C -> value
+; mem_set - sets an area of memory to a value
+; A -> start
+; B -> length
+; C -> value
 :mem_set
-	SET PUSH, A
+	SET PUSH, A ; save our registers
 	SET PUSH, B
-	ADD B, A
+	ADD B, A    ; calculate the last address
 
 :mem_clear_loop
-	SET [A], C
-	ADD A, 1
-	IFN A, B
-	   SET PC, mem_clear_loop
+	SET [A], C  ; set word to value
+	ADD A, 1    ; point to next memory address
+	IFN A, B    ; are we done?
+	   SET PC, mem_clear_loop ; no, repeat!
 
-	SET B, POP
+	SET B, POP  ; yes, clean up
 	SET A, POP
 	SET PC, POP
 
@@ -81,7 +79,7 @@
 	SET PUSH, A
 	SET PUSH, B
 
-	AND B, 0xFFFE  ; set to even
+	AND B, 0xFFFE   ; set to even
 	SUB B, 4		; sub overhead
 	SET [A], 0x0000 ; set first word to zero
 	ADD A, 1		; shift pointer
@@ -101,44 +99,47 @@
 ; A <- amount of free memory in this table
 ; ToDo: TEST!
 :mm_free
-	SET PUSH, X
-	SET PUSH, Y
-	SET PUSH, Z
-
-	SET Y, 0
-
 	IFN [A], 0
 		SET PC, mm_free_err
 
+	SET PUSH, X ; saving our registers
+	SET PUSH, Y
+	SET PUSH, Z
+
+	SET Y, 0    ; our counter
+	ADD A, 1    ; set the pointer to the first entry
+
 :mm_free_loop
-	ADD A, 1
-	SET X, [A]
+	SET X, [A]  ; get the length of the entry
 	SET Z, X
 
-	AND X, 0xFFFE
+	AND X, 0x0001 ; check for the lowest bit
 	IFN X, 0
 		SET PC, mm_free_skip
 
-	ADD Y, [A]
-	ADD A, 1
+	ADD Y, [A]  ; the entry is free: add its length to Y
+	ADD A, 1    ; we add the raw entry on A so we need this
 
 :mm_free_skip
-	ADD A, Z
-	ADD A, 1
-	IFN [A], 0
-		SET PC, mm_free_loop
+	ADD A, Z    ; add the length of the entry (including the flag)
+	ADD A, 1    ; skip the second length
+	IFN [A], 0  ; are we done?
+		SET PC, mm_free_loop ; no, repeat
 
-	SET A, Y
+	SET A, Y    ; yes, save the free memory in A
 
-	SET Z, POP
+	SET Z, POP  ; and clean up
 	SET Y, POP
 	SET X, POP
 	SET PC, POP
 
+:mm_free_err
+	SET A, 0 ; something went wrong, return 0
+	SET PC, POP
 
 
 ;mm_alloc allocates a length of memory and returns address
-; A -> pionter to manage memory area.
+; A -> pointer to manage memory area.
 ; B -> length to allocate, rounded up if odd
 ; A <- address of allocation, if no free memory is found 0 is returned.
 ;malloc
@@ -149,17 +150,19 @@
     SET PUSH, I
 	SET PUSH, J
 	SET PUSH, B
-	AND B, 0x0001
-	IFE B, 1
-		ADD PEEK, 1
+
+	ADD PEEK, 1 ; round up
+	AND PEEK, 0xFFFE
 
 	ADD A, 1
 	SET J, PEEK
 	ADD J, 2
+
 :mm_alloc_loop
 	SET B, [A]
-        IFE B, 0
-            SET PC, mm_alloc_error
+	IFE B, 0
+		SET PC, mm_alloc_error
+	
 	SET C, B
 	AND C, 0x0001
 	IFE C, 1
@@ -189,7 +192,6 @@
 	SET [C], B
 	SET [I], B
 
-
 :mm_alloc_end
 	ADD SP, 1
 	SET J, POP
@@ -211,7 +213,8 @@
         SET PC, mm_alloc_end
 
 :mm_alloc_table_end
-        SUB C, 1
-        ADD [A], 1
-        ADD [C], 1
-        SET PC, mm_alloc_end
+	SUB C, 1
+	ADD [A], 1
+	ADD [C], 1
+	SET PC, mm_alloc_end
+
