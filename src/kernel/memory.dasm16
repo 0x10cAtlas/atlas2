@@ -74,7 +74,6 @@
 ; mm_setup - sets up memory management
 ; A -> start address of the memory to manage
 ; B -> number of words to manage (even number!)
-; ToDo: TEST!
 :mm_setup
 	SET PUSH, A
 	SET PUSH, B
@@ -97,7 +96,6 @@
 ; mm_free - counts the amount of free memory in this memory table
 ; A -> start of the memory table
 ; A <- amount of free memory in this table
-; ToDo: TEST!
 :mm_free
 	IFN [A], 0
 		SET PC, mm_free_err
