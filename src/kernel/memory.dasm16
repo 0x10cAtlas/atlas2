@@ -93,12 +93,12 @@
 	SET A, POP
 	SET PC, POP
 
-; mm_free - counts the amount of free memory in this memory table
+; mm_count - counts the amount of free memory in this memory table
 ; A -> start of the memory table
 ; A <- amount of free memory in this table
-:mm_free
+:mm_count
 	IFN [A], 0
-		SET PC, mm_free_err
+		SET PC, mm_count_err
 
 	SET PUSH, X ; saving our registers
 	SET PUSH, Y
@@ -107,22 +107,22 @@
 	SET Y, 0    ; our counter
 	ADD A, 1    ; set the pointer to the first entry
 
-:mm_free_loop
+:mm_count_loop
 	SET X, [A]  ; get the length of the entry
 	SET Z, X
 
 	AND X, 0x0001 ; check for the lowest bit
 	IFN X, 0
-		SET PC, mm_free_skip
+		SET PC, mm_count_skip
 
 	ADD Y, [A]  ; the entry is free: add its length to Y
 	ADD A, 1    ; we add the raw entry on A so we need this
 
-:mm_free_skip
+:mm_count_skip
 	ADD A, Z    ; add the length of the entry (including the flag)
 	ADD A, 1    ; skip the second length
 	IFN [A], 0  ; are we done?
-		SET PC, mm_free_loop ; no, repeat
+		SET PC, mm_count_loop ; no, repeat
 
 	SET A, Y    ; yes, save the free memory in A
 
@@ -131,16 +131,16 @@
 	SET X, POP
 	SET PC, POP
 
-:mm_free_err
+:mm_count_err
 	SET A, 0 ; something went wrong, return 0
 	SET PC, POP
 
-
-;mm_alloc allocates a length of memory and returns address
+	
+; mm_alloc - allocates a length of memory and returns address
 ; A -> pointer to manage memory area.
 ; B -> length to allocate, rounded up if odd
 ; A <- address of allocation, if no free memory is found 0 is returned.
-;malloc
+; malloc
 :mm_alloc
 	SET PUSH, A
 	SET PUSH, B
@@ -216,60 +216,63 @@
 	ADD [C], 1
 	SET PC, mm_alloc_end
 
-;mm_dealloc deallocates an allocation of memory when provided by its address
+
+; mm_free - deallocates an allocation of memory when provided by its address
 ; A -> pointer to the memory allocation (same value that mm_alloc returns)
-:mm_dealloc
+:mm_free
 	SET PUSH, A
 	SET PUSH, B
 	SET PUSH, C
-	SET PUSH, I
-	SET PUSH, J
 	
 	SET C, A
 	SUB A, 1
-	SET B, [A]
-	AND B, 0xFFFE
-	ADD C, B
-	SET I, C
-	ADD I, 1
-	SET J, [I]
-	AND J, 0x0001
-	IFN [I], 0
-	IFE J, 0
-		JSR mm_dealloc_joinforward
-	SET I, A
-	SUB I, 1
-	SET J, [I]
-	AND J, 0x0001
-	IFE [I], 0
-		SET PC, mm_dealloc_end
-	IFE J, 1
-		SET PC, mm_dealloc_end
 	
-	SUB A, 1
-	SUB A, [A]
-	SUB A, 1
-	ADD [A], B
-	ADD [A], 2
-	SET [C], [A]
-	
-:mm_dealloc_end
 	AND [A], 0xFFFE
+	ADD C, [A]
 	AND [C], 0xFFFE
-	SET J, POP
-	SET I, POP
+	
+	ADD C, 1
+	IFE [C], 0
+		SET PC, mm_free_skip
+		
+	SET B, [C]
+	AND B, 0x0001
+	IFE B, 1
+		SET PC, mm_free_skip
+	
+	; join with next entry
+	ADD [A], 2
+	ADD [A], [C]
+	
+	SET C, A
+	ADD C, [A]
+	ADD C, 1
+	SET [C], [A]
+
+:mm_free_skip
+	SET C, A
+	SUB C, 1
+	
+	IFE [C], 0
+		SET PC, mm_free_end
+	
+	SET B, [C]
+	AND B, 0x0001
+	IFE B, 1
+		SET PC, mm_free_end
+		
+	; join with prev entry
+	SUB C, [C]
+	ADD [C], 2
+	ADD [C], [A]
+	
+	SET A, C
+	ADD A, [C]
+	SUB A, 1
+	SET [A], [C]
+	
+:mm_free_end
 	SET C, POP
 	SET B, POP
 	SET A, POP
-	SET PC, POP
-	
-:mm_dealloc_joinforward
-	SET J, [I]
-	ADD I, [I]
-	ADD I, 1
-	ADD [I], B
-	ADD [I], 2
-	SET B, [I]
-	SET C, I
-	SET [A], [I]
 	SET PC, POP
