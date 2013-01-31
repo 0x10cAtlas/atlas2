@@ -135,12 +135,12 @@
 	SET A, 0 ; something went wrong, return 0
 	SET PC, POP
 
-
-;mm_alloc allocates a length of memory and returns address
+	
+; mm_alloc - allocates a length of memory and returns address
 ; A -> pointer to manage memory area.
 ; B -> length to allocate, rounded up if odd
 ; A <- address of allocation, if no free memory is found 0 is returned.
-;malloc
+; malloc
 :mm_alloc
 	SET PUSH, A
 	SET PUSH, B
@@ -216,60 +216,63 @@
 	ADD [C], 1
 	SET PC, mm_alloc_end
 
-;mm_dealloc deallocates an allocation of memory when provided by its address
+
+; mm_dealloc - deallocates an allocation of memory when provided by its address
 ; A -> pointer to the memory allocation (same value that mm_alloc returns)
 :mm_dealloc
 	SET PUSH, A
 	SET PUSH, B
 	SET PUSH, C
-	SET PUSH, I
-	SET PUSH, J
 	
 	SET C, A
 	SUB A, 1
-	SET B, [A]
-	AND B, 0xFFFE
-	ADD C, B
-	SET I, C
-	ADD I, 1
-	SET J, [I]
-	AND J, 0x0001
-	IFN [I], 0
-	IFE J, 0
-		JSR mm_dealloc_joinforward
-	SET I, A
-	SUB I, 1
-	SET J, [I]
-	AND J, 0x0001
-	IFE [I], 0
-		SET PC, mm_dealloc_end
-	IFE J, 1
+	
+	AND [A], 0xFFFE
+	ADD C, [A]
+	AND [C], 0xFFFE
+	
+	ADD C, 1
+	IFE [C], 0
+		SET PC, mm_dealloc_skip
+		
+	SET B, [C]
+	AND B, 0x0001
+	IFE B, 1
+		SET PC, mm_dealloc_skip
+	
+	; join with next entry
+	ADD [A], 2
+	ADD [A], [C]
+	
+	SET C, A
+	ADD C, [A]
+	ADD C, 1
+	SET [C], [A]
+
+:mm_dealloc_skip
+	SET C, A
+	SUB C, 1
+	
+	IFE [C], 0
 		SET PC, mm_dealloc_end
 	
+	SET B, [C]
+	AND B, 0x0001
+	IFE B, 1
+		SET PC, mm_dealloc_end
+		
+	; join with prev entry
+	SUB C, [C]
+	ADD [C], 2
+	ADD [C], [A]
+	
+	SET A, C
+	ADD A, [C]
 	SUB A, 1
-	SUB A, [A]
-	SUB A, 1
-	ADD [A], B
-	ADD [A], 2
-	SET [C], [A]
+	SET [A], [C]
 	
 :mm_dealloc_end
-	AND [A], 0xFFFE
-	AND [C], 0xFFFE
-	SET J, POP
-	SET I, POP
 	SET C, POP
 	SET B, POP
 	SET A, POP
-	SET PC, POP
-	
-:mm_dealloc_joinforward
-	SET J, [I]
-	ADD I, [I]
-	ADD I, 1
-	ADD [I], B
-	ADD [I], 2
-	SET B, [I]
-	SET C, I
-	SET [A], [I]
 	SET PC, POP
