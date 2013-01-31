@@ -165,17 +165,18 @@
 	AND C, 0x0001
 	IFE C, 1
 		SET PC, mm_alloc_skip
+		
+	SET C, A
+	ADD C, [A]
+	ADD C, 1	
 
+	IFE B, PEEK
+		SET PC, mm_alloc_table_end
+		
 	IFG J, B
 		SET PC, mm_alloc_skip
 
-	SET C, A
-        ADD C, 1
-	ADD C, B
-        ADD C, 1
-        IFE 0, [C]
-            SET PC, mm_alloc_table_end
-        SUB C, 1
+	
 	SET [A], PEEK ; first bookend to length
 	SET I, A
 	ADD I, PEEK
@@ -203,7 +204,7 @@
 :mm_alloc_skip
         AND B, 0xFFFE
 	ADD A, B
-	ADD A, 1
+	ADD A, 2
 	SET PC, mm_alloc_loop
 
 :mm_alloc_error
@@ -211,7 +212,6 @@
         SET PC, mm_alloc_end
 
 :mm_alloc_table_end
-	SUB C, 1
 	ADD [A], 1
 	ADD [C], 1
 	SET PC, mm_alloc_end
