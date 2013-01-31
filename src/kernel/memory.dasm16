@@ -93,12 +93,12 @@
 	SET A, POP
 	SET PC, POP
 
-; mm_free - counts the amount of free memory in this memory table
+; mm_count - counts the amount of free memory in this memory table
 ; A -> start of the memory table
 ; A <- amount of free memory in this table
-:mm_free
+:mm_count
 	IFN [A], 0
-		SET PC, mm_free_err
+		SET PC, mm_count_err
 
 	SET PUSH, X ; saving our registers
 	SET PUSH, Y
@@ -107,22 +107,22 @@
 	SET Y, 0    ; our counter
 	ADD A, 1    ; set the pointer to the first entry
 
-:mm_free_loop
+:mm_count_loop
 	SET X, [A]  ; get the length of the entry
 	SET Z, X
 
 	AND X, 0x0001 ; check for the lowest bit
 	IFN X, 0
-		SET PC, mm_free_skip
+		SET PC, mm_count_skip
 
 	ADD Y, [A]  ; the entry is free: add its length to Y
 	ADD A, 1    ; we add the raw entry on A so we need this
 
-:mm_free_skip
+:mm_count_skip
 	ADD A, Z    ; add the length of the entry (including the flag)
 	ADD A, 1    ; skip the second length
 	IFN [A], 0  ; are we done?
-		SET PC, mm_free_loop ; no, repeat
+		SET PC, mm_count_loop ; no, repeat
 
 	SET A, Y    ; yes, save the free memory in A
 
@@ -131,7 +131,7 @@
 	SET X, POP
 	SET PC, POP
 
-:mm_free_err
+:mm_count_err
 	SET A, 0 ; something went wrong, return 0
 	SET PC, POP
 
@@ -217,9 +217,9 @@
 	SET PC, mm_alloc_end
 
 
-; mm_dealloc - deallocates an allocation of memory when provided by its address
+; mm_free - deallocates an allocation of memory when provided by its address
 ; A -> pointer to the memory allocation (same value that mm_alloc returns)
-:mm_dealloc
+:mm_free
 	SET PUSH, A
 	SET PUSH, B
 	SET PUSH, C
@@ -233,12 +233,12 @@
 	
 	ADD C, 1
 	IFE [C], 0
-		SET PC, mm_dealloc_skip
+		SET PC, mm_free_skip
 		
 	SET B, [C]
 	AND B, 0x0001
 	IFE B, 1
-		SET PC, mm_dealloc_skip
+		SET PC, mm_free_skip
 	
 	; join with next entry
 	ADD [A], 2
@@ -249,17 +249,17 @@
 	ADD C, 1
 	SET [C], [A]
 
-:mm_dealloc_skip
+:mm_free_skip
 	SET C, A
 	SUB C, 1
 	
 	IFE [C], 0
-		SET PC, mm_dealloc_end
+		SET PC, mm_free_end
 	
 	SET B, [C]
 	AND B, 0x0001
 	IFE B, 1
-		SET PC, mm_dealloc_end
+		SET PC, mm_free_end
 		
 	; join with prev entry
 	SUB C, [C]
@@ -271,7 +271,7 @@
 	SUB A, 1
 	SET [A], [C]
 	
-:mm_dealloc_end
+:mm_free_end
 	SET C, POP
 	SET B, POP
 	SET A, POP
