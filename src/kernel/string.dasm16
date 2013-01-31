@@ -52,3 +52,29 @@
 	SET C, POP
 	SET PC, POP
 
+
+; strncpy - same as strcpy but with length limitation
+; A -> source string
+; B -> destination string
+; C -> max length
+:strncpy
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, C
+
+:strncpy_loop
+	SET [B], [A]
+	IFE [A], 0
+		SET PC, strncpy_end
+	SUB C, 1
+	ADD A, 1
+	ADD B, 1
+	IFN C, 0
+		SET PC, strncpy_loop
+
+:strncpy_end
+	SET C, POP
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
