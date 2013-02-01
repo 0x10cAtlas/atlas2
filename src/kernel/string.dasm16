@@ -4,6 +4,8 @@
 ; # Changelog:                                                                #
 ; # 28.01.2013, plusmid - file created, basic routines                        #
 ; # 31.01.2013, plusmid - added strncpy, strpack, strunpack, pstrlen, ustrlen #
+; # 02.02.2013, plusmid - strlen optimized, strncpy fixed, strpack/unpack is  #
+; #                       broken                                              #
 ; #############################################################################
 
 
@@ -11,19 +13,16 @@
 ; A -> pointer to the string
 ; A <- length of the string in words
 :strlen
-	SET PUSH, B
+	SET PUSH, A
 
-	SET B, 0xFFFF
 	SUB A, 1
 
 :strlen_loop
 	ADD A, 1
-	ADD B, 1
 	IFN [A], 0
 		SET PC, strlen_loop
 
-	SET A, B
-	SET B, POP
+	SUB A, POP
 	SET PC, POP
 
 
@@ -35,16 +34,15 @@
 	SET PUSH, B
 	SET PUSH, C
 
-	SET C, 0
-
 :strcpy_loop
 	IFE [A], 0
 		SET PC, strcpy_end
 	SET [B], [A]
 	ADD A, 1
 	ADD B, 1
-	ADD C, 1
-	SET PC, strcpy_loop
+	SUB C, 1
+	IFN C, 0
+		SET PC, strcpy_loop
 
 :strcpy_end
 	SET [B], [A]
@@ -84,7 +82,7 @@
 ; strpack - packs a string
 ; A -> source string
 ; B -> destination of the packed string
-; ToDo: TEST!
+; ToDo: TEST! (broken?)
 :strpack
 	SET PUSH, A
 	SET PUSH, B
@@ -123,7 +121,7 @@
 ; strunpack - unpacks a string packed by strpack
 ; A -> packed source string
 ; B -> destination string
-; ToDo: TEST!
+; ToDo: TEST! (broken?)
 :strunpack
 	SET PUSH, A
 	SET PUSH, B
@@ -193,4 +191,3 @@
 	SET C, POP
 	SET B, POP
 	SET PC, POP
-
