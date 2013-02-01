@@ -3,7 +3,9 @@
 ; # Created: 28.01.2013                                                       #
 ; # Changelog:                                                                #
 ; # 28.01.2013, plusmid - file created, basic routines                        #
+; # 31.01.2013, plusmid - added strncpy, strpack, strunpack, pstrlen, ustrlen #
 ; #############################################################################
+
 
 ; strlen - calculates the length of a string
 ; A -> pointer to the string
@@ -50,5 +52,145 @@
 
 	SET B, POP
 	SET C, POP
+	SET PC, POP
+
+
+; strncpy - same as strcpy but with length limitation
+; A -> source string
+; B -> destination string
+; C -> max length
+:strncpy
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, C
+
+:strncpy_loop
+	SET [B], [A]
+	IFE [A], 0
+		SET PC, strncpy_end
+	SUB C, 1
+	ADD A, 1
+	ADD B, 1
+	IFN C, 0
+		SET PC, strncpy_loop
+
+:strncpy_end
+	SET C, POP
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
+
+; strpack - packs a string
+; A -> source string
+; B -> destination of the packed string
+; ToDo: TEST!
+:strpack
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, X
+	SET PUSH, Y
+
+:strpack_loop
+	SET C, [A]
+	AND X, 0x00FF
+	IFE [A], 0x0000
+		SET PC, strpack_end
+
+	ADD A, 1
+	SET Y, [A]
+	SHL Y, 8
+	BOR X, Y
+
+	IFE [A], 0x0000
+		SET PC, strpack_end
+
+	SET [B], X
+	ADD A, 1
+	ADD B, 1
+	SET PC, strpack_loop
+
+:strpack_end
+	SET [B], X
+
+	SET Y, POP
+	SET X, POP
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
+
+; strunpack - unpacks a string packed by strpack
+; A -> packed source string
+; B -> destination string
+; ToDo: TEST!
+:strunpack
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, X
+
+:strunpack_loop
+	SET X, [A]
+	SHR X, 8
+	SET [B], X
+	ADD B, 1
+
+	IFE X, 0
+		SET PC, strunpack_end
+
+	SET X, [A]
+	AND X, 0x00FF
+	SET [B], X
+	ADD A, 1
+	ADD B, 1
+
+	IFN X, 0
+		SET PC, strunpack_loop
+
+:strunpack_end
+	SET X, POP
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
+
+; pstrlen - calculates the length of a string (packed)
+; A -> string
+; B <- packed length
+; ToDo: TEST!
+:pstrlen
+	JSR strlen
+	ADD A, 2 ; +1 for the tailing 0x00 +1 for the packed tailing 0x0000
+	SHR A, 1
+	SET PC, POP
+
+
+; ustrlen - calculates the length of a packed string (unpacked)
+; A -> string
+; A <- length
+; ToDo: TEST!
+:ustrlen
+	SET PUSH, B
+	SET PUSH, C
+
+	SET C, 0
+
+:ustrlen_loop
+	SET B, [A] ; add 2 to C while the upper byte of [A]!=0x00
+	AND B, 0xFF00
+	ADD A, 1
+	ADD C, 2
+	IFN B, 0x0000
+		SET PC, ustrlen_loop
+
+	SUB A, 1 ; subtract the number of 0x00 we have counted
+	SUB C, 1
+	IFE [A], 0x0000
+		SUB C, 1
+
+	SET A, C
+
+	SET C, POP
+	SET B, POP
 	SET PC, POP
 
