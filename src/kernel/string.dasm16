@@ -6,6 +6,7 @@
 ; # 31.01.2013, plusmid - added strncpy, strpack, strunpack, pstrlen, ustrlen #
 ; # 02.02.2013, plusmid - strlen optimized, strncpy fixed, strpack/unpack is  #
 ; #                       broken                                              #
+: # 02.02.2013, bungao - strpack/strunpack fixed and tested                   #
 ; #############################################################################
 
 
@@ -87,31 +88,29 @@
 	SET PUSH, A
 	SET PUSH, B
 	SET PUSH, X
-	SET PUSH, Y
 
 :strpack_loop
-	SET C, [A]
-	AND X, 0x00FF
+	IFE [A], 0x0000
+		SET [B], 0x0000
 	IFE [A], 0x0000
 		SET PC, strpack_end
-
-	ADD A, 1
-	SET Y, [A]
-	SHL Y, 8
-	BOR X, Y
-
-	IFE [A], 0x0000
-		SET PC, strpack_end
-
+	
+	SET X, [A]
+	SHL X, 8
 	SET [B], X
+	
 	ADD A, 1
+	IFE [A], 0x0000
+		SET PC, strpack_end
+
+	SET X, [A]
+	AND X, 0x00FF
+	BOR [B], X
 	ADD B, 1
 	SET PC, strpack_loop
 
+	
 :strpack_end
-	SET [B], X
-
-	SET Y, POP
 	SET X, POP
 	SET B, POP
 	SET A, POP
@@ -122,6 +121,52 @@
 ; A -> packed source string
 ; B -> destination string
 ; ToDo: TEST! (broken?)
+:strunpack
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, X
+
+; strpack - packs a string
+; A -> source string
+; B -> destination of the packed string
+; ToDo: TEST! (broken?)
+:strpack
+	SET PUSH, A
+	SET PUSH, B
+	SET PUSH, X
+
+:strpack_loop
+	IFE [A], 0x0000
+		SET [B], 0x0000
+	IFE [A], 0x0000
+		SET PC, strpack_end
+
+	SET X, [A]
+	SHL X, 8
+	SET [B], X
+
+	ADD A, 1
+	IFE [A], 0x0000
+		SET PC, strpack_end
+
+	SET X, [A]
+	AND X, 0x00FF
+	BOR [B], X
+	ADD B, 1
+        add A, 1
+	SET PC, strpack_loop
+
+
+:strpack_end
+	SET X, POP
+	SET B, POP
+	SET A, POP
+	SET PC, POP
+
+
+; strunpack - unpacks a string packed by strpack
+; A -> packed source string
+; B -> destination string
 :strunpack
 	SET PUSH, A
 	SET PUSH, B
@@ -155,7 +200,6 @@
 ; pstrlen - calculates the length of a string (packed)
 ; A -> string
 ; B <- packed length
-; ToDo: TEST!
 :pstrlen
 	JSR strlen
 	ADD A, 2 ; +1 for the tailing 0x00 +1 for the packed tailing 0x0000
