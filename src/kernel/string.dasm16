@@ -9,7 +9,7 @@
 ; # 02.02.2013, bungao - strpack/strunpack fixed and tested                   #
 ; # 03.02.2013, VladVP - added strcpyfast which is merely an optimization of  #
 ; #                      strcpy, and optimized strpack and strunpack          #
-: # 04.02.2013, bungao - merged in optimizations, added labels                #
+; # 04.02.2013, bungao - merged in optimizations, added labels                #
 ; #############################################################################
 
 
