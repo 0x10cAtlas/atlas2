@@ -6,7 +6,9 @@
 ; # 31.01.2013, plusmid - added strncpy, strpack, strunpack, pstrlen, ustrlen #
 ; # 02.02.2013, plusmid - strlen optimized, strncpy fixed, strpack/unpack is  #
 ; #                       broken                                              #
-: # 02.02.2013, bungao - strpack/strunpack fixed and tested                   #
+; # 02.02.2013, bungao - strpack/strunpack fixed and tested                   #
+; # 03.02.2013, VladVP - added strcpyfast which is merely an optimization of  #
+; #                      strcpy, and optimized strpack and strunpack          #
 ; #############################################################################
 
 
@@ -53,7 +55,29 @@
 	SET C, POP
 	SET PC, POP
 
+	
+; strcpyfast - copies a string from one address to another
+; MUCH faster than the above function, but uses the I and J
+; registers for I/O
+; I -> source pointer
+; J -> destination pointer
+; I <- copied words
+:strcpyfast
+	SET PUSH, I
+	SET PUSH, J
 
+	STI [J], [I]
+	IFN [I], 0
+	SUB PC, 3 ; using SUB PC instead of SET PC eliminates a (1) clock cycle
+			  ; plus, we won't have to use those ugly labels ;)
+	
+	STI [J], [I] ; why not? :P
+	
+	SET J, POP
+	SUB I, POP
+	SET PC, POP
+
+	
 ; strncpy - same as strcpy but with length limitation
 ; A -> source string
 ; B -> destination string
@@ -86,69 +110,48 @@
 :strpack
 	SET PUSH, A
 	SET PUSH, B
-	SET PUSH, X
-
-:strpack_loop
-	IFE [A], 0x0000
-		SET [B], 0x0000
-	IFE [A], 0x0000
-		SET PC, strpack_end
-
-	SET X, [A]
-	SHL X, 8
-	SET [B], X
-
+	
+	SET [B], [A]
+	SHL [B], 8
+	IFE [A], 0
+	ADD PC, 7
 	ADD A, 1
-	IFE [A], 0x0000
-		SET PC, strpack_end
-
-	SET X, [A]
-	AND X, 0x00FF
-	BOR [B], X
+	IFE [A], 0
+	ADD PC, 4
+	BOR [B], [A]
+	ADD A, 1
 	ADD B, 1
-        add A, 1
-	SET PC, strpack_loop
-
-
-:strpack_end
-	SET X, POP
+	SUB PC, 0xB
+	
 	SET B, POP
 	SET A, POP
 	SET PC, POP
 
-
-; strunpack - unpacks a string packed by strpack
+; strunpack - unpacks a string packed by strpack and/or strpackfast
 ; A -> packed source string
 ; B -> destination string
 :strunpack
 	SET PUSH, A
 	SET PUSH, B
-	SET PUSH, X
-
-:strunpack_loop
-	SET X, [A]
-	SHR X, 8
-	SET [B], X
+	SUB B, 1
+	
 	ADD B, 1
-
-	IFE X, 0
-		SET PC, strunpack_end
-
-	SET X, [A]
-	AND X, 0x00FF
-	SET [B], X
+	SET [B], [A]
+	SHR [B], 8
+	IFE [B], 0
+	ADD PC, 7
+	ADD B, 1
+	SET [B], [A]
 	ADD A, 1
-	ADD B, 1
-
-	IFN X, 0
-		SET PC, strunpack_loop
-
-:strunpack_end
-	SET X, POP
+	AND [B], 0x00FF
+	IFN [B], 0
+	SUB PC, 0xC
+	
 	SET B, POP
 	SET A, POP
 	SET PC, POP
 
+	
 ; pstrlen - calculates the length of a string (packed)
 ; A -> string
 ; B <- packed length
