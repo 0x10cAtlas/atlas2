@@ -10,6 +10,7 @@
 ; # 03.02.2013, VladVP - added strcpyfast which is merely an optimization of  #
 ; #                      strcpy, and optimized strpack and strunpack          #
 ; # 04.02.2013, bungao - merged in optimizations, added labels                #
+; # 14.02.2013, VladVP - added strpcpy and strpncpy                           #
 ; #############################################################################
 
 
@@ -171,4 +172,49 @@
 
 	SET C, POP
 	SET B, POP
+	SET PC, POP
+
+
+; strpcpy - copies a lenght-prefixed string from one address to another
+; I -> source pointer
+; J -> destination pointer
+:strpcpy
+	SET PUSH, I
+	SUB [SP], 1
+	ADD J, [I]
+	ADD I, [I]
+	STD [J], [I]
+	IFN I, PEEK
+	SUB PC, 3
+	SET I, POP ;any better alternatives?
+	ADD I, 1
+	ADD J, 1
+	SET PC, POP
+
+
+; strpncpy - same as strpcpy but with length limitation
+; I -> source string
+; J -> destination string
+; A -> max length
+:strpncpy
+	SET PUSH, I
+	SUB [SP], 1
+	
+	IFG C, [I]
+	ADD PC, 5
+	
+	ADD J, C
+	ADD I, C
+	ADD PC, 2
+	
+	ADD J, [I]
+	ADD I, [I]
+	
+	STD [J], [I]
+	IFN I, PEEK
+	SUB PC, 3
+	
+	SET I, POP ;any better alternatives?
+	ADD I, 1
+	ADD J, 1
 	SET PC, POP
