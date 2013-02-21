@@ -11,6 +11,8 @@
 ; #                      strcpy, and optimized strpack and strunpack          #
 ; # 04.02.2013, bungao - merged in optimizations, added labels                #
 ; # 14.02.2013, VladVP - added strpcpy and strpncpy                           #
+; # 17.02.2013, VladVP - fixed strpcpy and strpncpy parameters to correspond  #
+; #                      to the API defintion                                 #
 ; #############################################################################
 
 
